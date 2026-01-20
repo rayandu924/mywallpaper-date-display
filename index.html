@@ -206,12 +206,17 @@
 
       customFontStyleEl = document.createElement('style');
 
-      // Check if it's a Google Fonts URL or a direct font file
-      if (url.includes('fonts.googleapis.com')) {
-        // Google Fonts - use @import
+      // Check if it's a CSS URL (Google Fonts, cdnfonts, etc.) or a direct font file
+      var isCssUrl = url.includes('fonts.googleapis.com') ||
+                     url.includes('fonts.cdnfonts.com') ||
+                     url.includes('/css') ||
+                     url.endsWith('.css');
+
+      if (isCssUrl) {
+        // CSS URL - use @import
         customFontStyleEl.textContent = '@import url("' + url + '");';
       } else {
-        // Direct font file URL
+        // Direct font file URL (.woff, .woff2, .ttf, .otf)
         customFontStyleEl.textContent = '@font-face { font-family: "' + (fontFamily || 'CustomFont') + '"; src: url("' + url + '"); }';
       }
 
