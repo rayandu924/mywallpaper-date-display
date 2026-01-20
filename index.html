@@ -195,6 +195,7 @@
 
     // Load custom font from URL
     // Uses network.requestAccess() for domains that aren't pre-approved
+    // Also parses CSS to extract font-family names and updates dropdown options
     async function loadCustomFont(url, fontFamily) {
       if (!url || loadedFontUrl === url) return;
 
@@ -238,6 +239,17 @@
             customFontStyleEl.textContent = response.data;
             document.head.appendChild(customFontStyleEl);
             console.log('[DateDisplay] Custom font CSS loaded successfully');
+
+            // Parse CSS to extract font families and update settings dropdown
+            var fontFamilies = parseFontFamiliesFromCSS(response.data);
+            if (fontFamilies.length > 0 && api.settings && api.settings.updateOptions) {
+              var options = fontFamilies.map(function(family) {
+                return { label: family, value: family };
+              });
+              api.settings.updateOptions('customFontFamily', options, fontFamilies[0]);
+              console.log('[DateDisplay] Updated font family dropdown with', fontFamilies.length, 'fonts:', fontFamilies);
+            }
+
             return;
           }
         } catch (e) {
@@ -271,6 +283,30 @@
       }
 
       document.head.appendChild(customFontStyleEl);
+    }
+
+    // Parse @font-face rules from CSS to extract font-family names
+    function parseFontFamiliesFromCSS(cssText) {
+      var families = [];
+      var seen = {};
+
+      // Match @font-face blocks and extract font-family
+      // Pattern: @font-face { ... font-family: 'Name' or "Name" or Name; ... }
+      var fontFaceRegex = /@font-face\s*\{[^}]*font-family\s*:\s*(['"]?)([^;'"]+)\1/gi;
+      var match;
+
+      while ((match = fontFaceRegex.exec(cssText)) !== null) {
+        var family = match[2].trim();
+        // Remove quotes if present at start/end
+        family = family.replace(/^['"]|['"]$/g, '').trim();
+
+        if (family && !seen[family]) {
+          seen[family] = true;
+          families.push(family);
+        }
+      }
+
+      return families;
     }
 
     // Load preset font from Google Fonts

@@ -1,7 +1,7 @@
 {
   "name": "Date Display",
-  "version": "1.1.0",
-  "sdkVersion": "2.9.0",
+  "version": "1.2.0",
+  "sdkVersion": "2.10.0",
   "description": "Beautiful date display widget with multi-language support and customizable fonts",
   "author": "MyWallpaper Team",
   "capabilities": {
@@ -153,10 +153,13 @@
       }
     },
     "customFontFamily": {
-      "type": "string",
+      "type": "select",
       "label": "Custom Font Family Name",
-      "description": "The font-family name to use",
-      "placeholder": "My Custom Font",
+      "description": "Select from available fonts (load URL first)",
+      "default": "CustomFont",
+      "options": [
+        { "label": "Custom Font", "value": "CustomFont" }
+      ],
       "showIf": {
         "setting": "fontMode",
         "equals": "custom"
