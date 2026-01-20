@@ -285,9 +285,9 @@
       var families = [];
       var seen = {};
 
-      // Match @font-face blocks and extract font-family
-      // Pattern: @font-face { ... font-family: 'Name' or "Name" or Name; ... }
-      var fontFaceRegex = /@font-face\s*\{[^}]*font-family\s*:\s*(['"]?)([^;'"]+)\1/gi;
+      // More robust regex to handle various spacing and quoting styles
+      // This looks for font-family: followed by quotes or word characters
+      var fontFaceRegex = /font-family\s*:\s*(['"]?)([^;'"]+)\1/gi;
       var match;
 
       while ((match = fontFaceRegex.exec(cssText)) !== null) {
@@ -295,10 +295,27 @@
         // Remove quotes if present at start/end
         family = family.replace(/^['"]|['"]$/g, '').trim();
 
-        if (family && !seen[family]) {
+        // Avoid generic families or duplicates
+        if (family && !seen[family] &&
+            !['inherit', 'initial', 'unset', 'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy'].includes(family.toLowerCase())) {
           seen[family] = true;
           families.push(family);
         }
+      }
+
+      // If regex fails or finds nothing, try a fallback search for @font-face specifically
+      if (families.length === 0) {
+         var blocks = cssText.match(/@font-face\s*{[^}]+}/gi) || [];
+         blocks.forEach(function(block) {
+            var fMatch = block.match(/font-family\s*:\s*(['"]?)([^;'"]+)\1/i);
+            if (fMatch) {
+               var f = fMatch[2].trim().replace(/^['"]|['"]$/g, '').trim();
+               if (f && !seen[f]) {
+                  seen[f] = true;
+                  families.push(f);
+               }
+            }
+         });
       }
 
       return families;
