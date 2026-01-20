@@ -1,0 +1,298 @@
+{
+  "name": "Date Display",
+  "version": "1.0.0",
+  "sdkVersion": "2.8.1",
+  "description": "Beautiful date display widget with multi-language support and customizable fonts",
+  "author": "MyWallpaper Team",
+  "capabilities": {
+    "hotReload": true,
+    "systemEvents": ["viewport:resize", "theme:change"]
+  },
+  "permissions": {
+    "network": {
+      "domains": ["fonts.googleapis.com", "fonts.gstatic.com"]
+    }
+  },
+  "defaultLayout": {
+    "widthPercent": 30,
+    "heightPercent": 15,
+    "xPercent": 5,
+    "yPercent": 5
+  },
+  "settings": {
+    "_sectionDisplay": {
+      "type": "section",
+      "label": "Display Options"
+    },
+    "showDayOfWeek": {
+      "type": "boolean",
+      "label": "Show Day of Week",
+      "default": true
+    },
+    "showDate": {
+      "type": "boolean",
+      "label": "Show Date",
+      "default": true
+    },
+    "dateFormat": {
+      "type": "select",
+      "label": "Date Format",
+      "default": "long",
+      "options": [
+        { "label": "Long (January 20, 2026)", "value": "long" },
+        { "label": "Short (Jan 20, 2026)", "value": "short" },
+        { "label": "Numeric (20/01/2026)", "value": "numeric" },
+        { "label": "Numeric US (01/20/2026)", "value": "numeric-us" },
+        { "label": "ISO (2026-01-20)", "value": "iso" },
+        { "label": "Day & Month (20 January)", "value": "day-month" },
+        { "label": "Month & Day (January 20)", "value": "month-day" }
+      ],
+      "showIf": {
+        "setting": "showDate",
+        "equals": true
+      }
+    },
+
+    "_sectionLanguage": {
+      "type": "section",
+      "label": "Language"
+    },
+    "languageMode": {
+      "type": "select",
+      "label": "Language Mode",
+      "default": "preset",
+      "options": [
+        { "label": "Preset Language", "value": "preset" },
+        { "label": "Custom Names", "value": "custom" }
+      ]
+    },
+    "language": {
+      "type": "select",
+      "label": "Language",
+      "default": "en",
+      "options": [
+        { "label": "English", "value": "en" },
+        { "label": "Français", "value": "fr" },
+        { "label": "Deutsch", "value": "de" },
+        { "label": "Español", "value": "es" },
+        { "label": "Italiano", "value": "it" },
+        { "label": "Português", "value": "pt" },
+        { "label": "日本語", "value": "ja" },
+        { "label": "中文", "value": "zh" },
+        { "label": "한국어", "value": "ko" },
+        { "label": "Русский", "value": "ru" },
+        { "label": "العربية", "value": "ar" }
+      ],
+      "showIf": {
+        "setting": "languageMode",
+        "equals": "preset"
+      }
+    },
+    "customDays": {
+      "type": "string",
+      "label": "Custom Day Names",
+      "description": "Comma-separated: Sun,Mon,Tue,Wed,Thu,Fri,Sat",
+      "default": "Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday",
+      "placeholder": "Sunday,Monday,Tuesday,...",
+      "showIf": {
+        "setting": "languageMode",
+        "equals": "custom"
+      }
+    },
+    "customMonths": {
+      "type": "string",
+      "label": "Custom Month Names",
+      "description": "Comma-separated: Jan,Feb,Mar,...",
+      "default": "January,February,March,April,May,June,July,August,September,October,November,December",
+      "placeholder": "January,February,March,...",
+      "showIf": {
+        "setting": "languageMode",
+        "equals": "custom"
+      }
+    },
+
+    "_sectionFont": {
+      "type": "section",
+      "label": "Font"
+    },
+    "fontMode": {
+      "type": "select",
+      "label": "Font Source",
+      "default": "preset",
+      "options": [
+        { "label": "Preset Fonts", "value": "preset" },
+        { "label": "Custom URL", "value": "custom" }
+      ]
+    },
+    "fontPreset": {
+      "type": "select",
+      "label": "Font Family",
+      "default": "Inter",
+      "options": [
+        { "label": "Inter", "value": "Inter" },
+        { "label": "Roboto", "value": "Roboto" },
+        { "label": "Outfit", "value": "Outfit" },
+        { "label": "Poppins", "value": "Poppins" },
+        { "label": "Montserrat", "value": "Montserrat" },
+        { "label": "Open Sans", "value": "Open Sans" },
+        { "label": "Lato", "value": "Lato" },
+        { "label": "Playfair Display", "value": "Playfair Display" },
+        { "label": "Merriweather", "value": "Merriweather" },
+        { "label": "Source Code Pro", "value": "Source Code Pro" },
+        { "label": "JetBrains Mono", "value": "JetBrains Mono" }
+      ],
+      "showIf": {
+        "setting": "fontMode",
+        "equals": "preset"
+      }
+    },
+    "customFontUrl": {
+      "type": "string",
+      "label": "Custom Font URL",
+      "description": "Google Fonts URL or direct font file URL",
+      "placeholder": "https://fonts.googleapis.com/css2?family=...",
+      "showIf": {
+        "setting": "fontMode",
+        "equals": "custom"
+      }
+    },
+    "customFontFamily": {
+      "type": "string",
+      "label": "Custom Font Family Name",
+      "description": "The font-family name to use",
+      "placeholder": "My Custom Font",
+      "showIf": {
+        "setting": "fontMode",
+        "equals": "custom"
+      }
+    },
+
+    "_sectionStyle": {
+      "type": "section",
+      "label": "Style"
+    },
+    "dayFontSize": {
+      "type": "range",
+      "label": "Day of Week Size",
+      "default": 24,
+      "min": 12,
+      "max": 120,
+      "step": 1,
+      "showIf": {
+        "setting": "showDayOfWeek",
+        "equals": true
+      }
+    },
+    "dateFontSize": {
+      "type": "range",
+      "label": "Date Size",
+      "default": 48,
+      "min": 12,
+      "max": 200,
+      "step": 1,
+      "showIf": {
+        "setting": "showDate",
+        "equals": true
+      }
+    },
+    "fontWeight": {
+      "type": "select",
+      "label": "Font Weight",
+      "default": "600",
+      "options": [
+        { "label": "Light (300)", "value": "300" },
+        { "label": "Regular (400)", "value": "400" },
+        { "label": "Medium (500)", "value": "500" },
+        { "label": "Semi-Bold (600)", "value": "600" },
+        { "label": "Bold (700)", "value": "700" },
+        { "label": "Extra-Bold (800)", "value": "800" }
+      ]
+    },
+    "textColor": {
+      "type": "color",
+      "label": "Text Color",
+      "default": "#ffffff"
+    },
+    "textAlign": {
+      "type": "select",
+      "label": "Text Alignment",
+      "default": "left",
+      "options": [
+        { "label": "Left", "value": "left" },
+        { "label": "Center", "value": "center" },
+        { "label": "Right", "value": "right" }
+      ]
+    },
+    "textOpacity": {
+      "type": "range",
+      "label": "Text Opacity",
+      "default": 100,
+      "min": 0,
+      "max": 100,
+      "step": 1
+    },
+    "letterSpacing": {
+      "type": "range",
+      "label": "Letter Spacing",
+      "default": 0,
+      "min": -5,
+      "max": 20,
+      "step": 0.5
+    },
+
+    "_sectionEffects": {
+      "type": "section",
+      "label": "Effects"
+    },
+    "enableShadow": {
+      "type": "boolean",
+      "label": "Text Shadow",
+      "default": true
+    },
+    "shadowColor": {
+      "type": "color",
+      "label": "Shadow Color",
+      "default": "#000000",
+      "showIf": {
+        "setting": "enableShadow",
+        "equals": true
+      }
+    },
+    "shadowBlur": {
+      "type": "range",
+      "label": "Shadow Blur",
+      "default": 10,
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "showIf": {
+        "setting": "enableShadow",
+        "equals": true
+      }
+    },
+    "shadowOffsetX": {
+      "type": "range",
+      "label": "Shadow Offset X",
+      "default": 2,
+      "min": -20,
+      "max": 20,
+      "step": 1,
+      "showIf": {
+        "setting": "enableShadow",
+        "equals": true
+      }
+    },
+    "shadowOffsetY": {
+      "type": "range",
+      "label": "Shadow Offset Y",
+      "default": 2,
+      "min": -20,
+      "max": 20,
+      "step": 1,
+      "showIf": {
+        "setting": "enableShadow",
+        "equals": true
+      }
+    }
+  }
+}

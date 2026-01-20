@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200" viewBox="0 0 400 200">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="2" dy="2" stdDeviation="4" flood-color="#000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <rect width="400" height="200" fill="url(#bg)"/>
+
+  <text x="30" y="70" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="600" fill="#ffffff" opacity="0.8" filter="url(#shadow)" text-transform="uppercase">MONDAY</text>
+
+  <text x="30" y="130" font-family="Inter, Arial, sans-serif" font-size="42" font-weight="600" fill="#ffffff" filter="url(#shadow)">January 20, 2026</text>
+
+  <text x="30" y="170" font-family="Inter, Arial, sans-serif" font-size="12" fill="#ffffff" opacity="0.5">Date Display Widget</text>
+</svg>

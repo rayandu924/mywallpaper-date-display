@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Date Display</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+      font-family: var(--mw-font-family, 'Inter', sans-serif);
+    }
+
+    .container {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .day-of-week {
+      font-size: var(--day-font-size, 24px);
+      font-weight: var(--font-weight, 600);
+      color: var(--text-color, #ffffff);
+      opacity: var(--text-opacity, 1);
+      letter-spacing: var(--letter-spacing, 0px);
+      text-shadow: var(--text-shadow, 2px 2px 10px rgba(0,0,0,0.5));
+      text-transform: uppercase;
+      margin-bottom: 5px;
+    }
+
+    .date {
+      font-size: var(--date-font-size, 48px);
+      font-weight: var(--font-weight, 600);
+      color: var(--text-color, #ffffff);
+      opacity: var(--text-opacity, 1);
+      letter-spacing: var(--letter-spacing, 0px);
+      text-shadow: var(--text-shadow, 2px 2px 10px rgba(0,0,0,0.5));
+      line-height: 1.1;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* Text alignment classes */
+    .align-left {
+      text-align: left;
+      align-items: flex-start;
+    }
+
+    .align-center {
+      text-align: center;
+      align-items: center;
+    }
+
+    .align-right {
+      text-align: right;
+      align-items: flex-end;
+    }
+  </style>
+</head>
+<body>
+  <div class="container" id="container">
+    <div class="day-of-week" id="dayOfWeek"></div>
+    <div class="date" id="date"></div>
+  </div>
+
+  <script>
+    // =====================================================
+    // Date Display Widget for MyWallpaper
+    // =====================================================
+
+    // Language data for preset languages
+    var LANGUAGES = {
+      en: {
+        days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+      },
+      fr: {
+        days: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
+        months: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre']
+      },
+      de: {
+        days: ['Sonntag', 'Montag', 'Dienstag', 'Mittwoch', 'Donnerstag', 'Freitag', 'Samstag'],
+        months: ['Januar', 'Februar', 'März', 'April', 'Mai', 'Juni', 'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember']
+      },
+      es: {
+        days: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+        months: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
+      },
+      it: {
+        days: ['Domenica', 'Lunedì', 'Martedì', 'Mercoledì', 'Giovedì', 'Venerdì', 'Sabato'],
+        months: ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre']
+      },
+      pt: {
+        days: ['Domingo', 'Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado'],
+        months: ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+      },
+      ja: {
+        days: ['日曜日', '月曜日', '火曜日', '水曜日', '木曜日', '金曜日', '土曜日'],
+        months: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月']
+      },
+      zh: {
+        days: ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'],
+        months: ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
+      },
+      ko: {
+        days: ['일요일', '월요일', '화요일', '수요일', '목요일', '금요일', '토요일'],
+        months: ['1월', '2월', '3월', '4월', '5월', '6월', '7월', '8월', '9월', '10월', '11월', '12월']
+      },
+      ru: {
+        days: ['Воскресенье', 'Понедельник', 'Вторник', 'Среда', 'Четверг', 'Пятница', 'Суббота'],
+        months: ['Январь', 'Февраль', 'Март', 'Апрель', 'Май', 'Июнь', 'Июль', 'Август', 'Сентябрь', 'Октябрь', 'Ноябрь', 'Декабрь']
+      },
+      ar: {
+        days: ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'],
+        months: ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر']
+      }
+    };
+
+    // DOM elements
+    var container = document.getElementById('container');
+    var dayOfWeekEl = document.getElementById('dayOfWeek');
+    var dateEl = document.getElementById('date');
+
+    // Current settings
+    var currentSettings = {};
+    var loadedFontUrl = null;
+    var customFontStyleEl = null;
+
+    // Get language data based on settings
+    function getLanguageData(settings) {
+      if (settings.languageMode === 'custom') {
+        var customDays = (settings.customDays || '').split(',').map(function(s) { return s.trim(); });
+        var customMonths = (settings.customMonths || '').split(',').map(function(s) { return s.trim(); });
+
+        // Validate we have correct number of items
+        if (customDays.length < 7) {
+          customDays = LANGUAGES.en.days;
+        }
+        if (customMonths.length < 12) {
+          customMonths = LANGUAGES.en.months;
+        }
+
+        return { days: customDays, months: customMonths };
+      }
+
+      return LANGUAGES[settings.language] || LANGUAGES.en;
+    }
+
+    // Format date according to settings
+    function formatDate(date, settings, langData) {
+      var day = date.getDate();
+      var month = date.getMonth();
+      var year = date.getFullYear();
+      var monthName = langData.months[month];
+      var monthShort = monthName.substring(0, 3);
+
+      var format = settings.dateFormat || 'long';
+
+      switch (format) {
+        case 'long':
+          return monthName + ' ' + day + ', ' + year;
+        case 'short':
+          return monthShort + ' ' + day + ', ' + year;
+        case 'numeric':
+          return padZero(day) + '/' + padZero(month + 1) + '/' + year;
+        case 'numeric-us':
+          return padZero(month + 1) + '/' + padZero(day) + '/' + year;
+        case 'iso':
+          return year + '-' + padZero(month + 1) + '-' + padZero(day);
+        case 'day-month':
+          return day + ' ' + monthName;
+        case 'month-day':
+          return monthName + ' ' + day;
+        default:
+          return monthName + ' ' + day + ', ' + year;
+      }
+    }
+
+    function padZero(n) {
+      return n < 10 ? '0' + n : n.toString();
+    }
+
+    // Load custom font from URL
+    function loadCustomFont(url, fontFamily) {
+      if (!url || loadedFontUrl === url) return;
+
+      loadedFontUrl = url;
+
+      // Remove previous custom font style
+      if (customFontStyleEl) {
+        customFontStyleEl.remove();
+      }
+
+      customFontStyleEl = document.createElement('style');
+
+      // Check if it's a Google Fonts URL or a direct font file
+      if (url.includes('fonts.googleapis.com')) {
+        // Google Fonts - use @import
+        customFontStyleEl.textContent = '@import url("' + url + '");';
+      } else {
+        // Direct font file URL
+        customFontStyleEl.textContent = '@font-face { font-family: "' + (fontFamily || 'CustomFont') + '"; src: url("' + url + '"); }';
+      }
+
+      document.head.appendChild(customFontStyleEl);
+    }
+
+    // Load preset font from Google Fonts
+    function loadPresetFont(fontName) {
+      var fontUrl = 'https://fonts.googleapis.com/css2?family=' + fontName.replace(/ /g, '+') + ':wght@300;400;500;600;700;800&display=swap';
+
+      if (loadedFontUrl === fontUrl) return;
+      loadedFontUrl = fontUrl;
+
+      if (customFontStyleEl) {
+        customFontStyleEl.remove();
+      }
+
+      customFontStyleEl = document.createElement('style');
+      customFontStyleEl.textContent = '@import url("' + fontUrl + '");';
+      document.head.appendChild(customFontStyleEl);
+    }
+
+    // Apply CSS custom properties
+    function applyStyles(settings) {
+      var root = document.documentElement;
+
+      // Font
+      var fontFamily;
+      if (settings.fontMode === 'custom' && settings.customFontFamily) {
+        loadCustomFont(settings.customFontUrl, settings.customFontFamily);
+        fontFamily = '"' + settings.customFontFamily + '", sans-serif';
+      } else {
+        var presetFont = settings.fontPreset || 'Inter';
+        loadPresetFont(presetFont);
+        fontFamily = '"' + presetFont + '", sans-serif';
+      }
+      root.style.setProperty('--mw-font-family', fontFamily);
+      document.body.style.fontFamily = fontFamily;
+
+      // Font sizes
+      root.style.setProperty('--day-font-size', (settings.dayFontSize || 24) + 'px');
+      root.style.setProperty('--date-font-size', (settings.dateFontSize || 48) + 'px');
+      root.style.setProperty('--font-weight', settings.fontWeight || '600');
+
+      // Colors
+      root.style.setProperty('--text-color', settings.textColor || '#ffffff');
+      root.style.setProperty('--text-opacity', (settings.textOpacity || 100) / 100);
+      root.style.setProperty('--letter-spacing', (settings.letterSpacing || 0) + 'px');
+
+      // Text shadow
+      if (settings.enableShadow) {
+        var shadowColor = settings.shadowColor || '#000000';
+        var shadowBlur = settings.shadowBlur || 10;
+        var shadowX = settings.shadowOffsetX || 2;
+        var shadowY = settings.shadowOffsetY || 2;
+        root.style.setProperty('--text-shadow', shadowX + 'px ' + shadowY + 'px ' + shadowBlur + 'px ' + shadowColor);
+      } else {
+        root.style.setProperty('--text-shadow', 'none');
+      }
+
+      // Alignment
+      container.className = 'container align-' + (settings.textAlign || 'left');
+    }
+
+    // Update the display
+    function updateDisplay(settings) {
+      var now = new Date();
+      var langData = getLanguageData(settings);
+
+      // Day of week
+      if (settings.showDayOfWeek) {
+        dayOfWeekEl.textContent = langData.days[now.getDay()];
+        dayOfWeekEl.classList.remove('hidden');
+      } else {
+        dayOfWeekEl.classList.add('hidden');
+      }
+
+      // Date
+      if (settings.showDate) {
+        dateEl.textContent = formatDate(now, settings, langData);
+        dateEl.classList.remove('hidden');
+      } else {
+        dateEl.classList.add('hidden');
+      }
+    }
+
+    // Main update function
+    function update(settings) {
+      currentSettings = settings || currentSettings;
+      applyStyles(currentSettings);
+      updateDisplay(currentSettings);
+    }
+
+    // Initialize when SDK is ready
+    function init() {
+      var api = window.MyWallpaper;
+
+      if (!api) {
+        console.error('[DateDisplay] MyWallpaper SDK not found');
+        return;
+      }
+
+      console.log('[DateDisplay] Initializing...');
+
+      // Initial render with current config
+      update(api.config);
+
+      // Listen for settings changes (hot reload)
+      api.onSettingsChange(function(settings, changedKeys) {
+        console.log('[DateDisplay] Settings changed:', changedKeys);
+        update(settings);
+      });
+
+      // Update every minute to keep the date current (in case it's left open overnight)
+      setInterval(function() {
+        updateDisplay(currentSettings);
+      }, 60000);
+
+      // Signal ready
+      api.ready({
+        capabilities: ['hot-reload'],
+        subscribedEvents: []
+      });
+
+      // Signal render complete
+      setTimeout(function() {
+        api.renderComplete();
+        console.log('[DateDisplay] Ready!');
+      }, 100);
+    }
+
+    // Wait for SDK
+    if (window.MyWallpaper) {
+      init();
+    } else {
+      window.addEventListener('mywallpaper:ready', init);
+      // Fallback timeout
+      setTimeout(function() {
+        if (window.MyWallpaper && !currentSettings.language) {
+          init();
+        }
+      }, 1000);
+    }
+  </script>
+</body>
+</html>
