@@ -8,11 +8,7 @@
     "hotReload": true,
     "systemEvents": ["viewport:resize", "theme:change"]
   },
-  "permissions": {
-    "network": {
-      "domains": ["fonts.googleapis.com", "fonts.gstatic.com"]
-    }
-  },
+  "permissions": {},
   "defaultLayout": {
     "widthPercent": 30,
     "heightPercent": 15,
