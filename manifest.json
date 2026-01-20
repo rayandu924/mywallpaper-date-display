@@ -1,7 +1,7 @@
 {
   "name": "Date Display",
-  "version": "1.0.0",
-  "sdkVersion": "2.8.1",
+  "version": "1.1.0",
+  "sdkVersion": "2.9.0",
   "description": "Beautiful date display widget with multi-language support and customizable fonts",
   "author": "MyWallpaper Team",
   "capabilities": {
