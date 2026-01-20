@@ -194,12 +194,18 @@
     }
 
     // Load custom font from URL
-    // Uses network.requestAccess() for domains that aren't pre-approved
-    // Also parses CSS to extract font-family names and updates dropdown options
+    // ALWAYS requests network permission for custom fonts via the modal
+    // Parses CSS to extract font-family names and updates dropdown options
     async function loadCustomFont(url, fontFamily) {
       if (!url || loadedFontUrl === url) return;
 
       var api = window.MyWallpaper;
+
+      // Validate URL format
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        console.error('[DateDisplay] Invalid font URL - must start with http:// or https://');
+        return;
+      }
 
       // Extract domain from URL
       var domain = null;
@@ -211,78 +217,67 @@
         return;
       }
 
-      // For non-Google Fonts domains, request network access first
-      var isGoogleFonts = domain.includes('fonts.googleapis.com') ||
-                          domain.includes('fonts.gstatic.com');
-
-      if (!isGoogleFonts && api && api.network && api.network.requestAccess) {
-        console.log('[DateDisplay] Requesting access to:', domain);
-        var result = await api.network.requestAccess(domain, 'Charger la police personnalisée');
-        if (!result.granted) {
-          console.warn('[DateDisplay] Network access denied for:', domain);
+      // Detect common mistakes with Google Fonts URLs and auto-correct
+      if (domain === 'fonts.google.com') {
+        // Try to extract font family from the URL and construct correct URL
+        var fontMatch = url.match(/family=([^&]+)/);
+        if (fontMatch) {
+          url = 'https://fonts.googleapis.com/css2?family=' + fontMatch[1] + '&display=swap';
+          domain = 'fonts.googleapis.com';
+          console.log('[DateDisplay] Corrected Google Fonts URL:', url);
+        } else {
+          console.error('[DateDisplay] Invalid Google Fonts URL. Use fonts.googleapis.com/css2?family=...');
           return;
         }
-        console.log('[DateDisplay] Access granted for:', domain);
+      }
 
-        // Fetch the CSS via the SDK's network proxy
-        try {
-          var response = await api.network.fetch(url);
-          if (response.ok && response.data) {
-            loadedFontUrl = url;
+      // ALWAYS request network permission for custom fonts
+      if (!api || !api.network || !api.network.requestAccess) {
+        console.error('[DateDisplay] Network API not available');
+        return;
+      }
 
-            // Remove previous custom font style
-            if (customFontStyleEl) {
-              customFontStyleEl.remove();
-            }
+      console.log('[DateDisplay] Requesting network access for:', domain);
+      var accessResult = await api.network.requestAccess(domain, 'Charger la police personnalisée depuis ' + domain);
 
-            customFontStyleEl = document.createElement('style');
-            customFontStyleEl.textContent = response.data;
-            document.head.appendChild(customFontStyleEl);
-            console.log('[DateDisplay] Custom font CSS loaded successfully');
+      if (!accessResult.granted) {
+        console.warn('[DateDisplay] Network access denied for:', domain);
+        return;
+      }
 
-            // Parse CSS to extract font families and update settings dropdown
-            var fontFamilies = parseFontFamiliesFromCSS(response.data);
-            if (fontFamilies.length > 0 && api.settings && api.settings.updateOptions) {
-              var options = fontFamilies.map(function(family) {
-                return { label: family, value: family };
-              });
-              api.settings.updateOptions('customFontFamily', options, fontFamilies[0]);
-              console.log('[DateDisplay] Updated font family dropdown with', fontFamilies.length, 'fonts:', fontFamilies);
-            }
+      console.log('[DateDisplay] Access granted, fetching font CSS...');
 
-            return;
+      // Fetch the CSS via the SDK's network proxy
+      try {
+        var response = await api.network.fetch(url);
+        if (response.ok && response.data) {
+          loadedFontUrl = url;
+
+          // Remove previous custom font style
+          if (customFontStyleEl) {
+            customFontStyleEl.remove();
           }
-        } catch (e) {
-          console.error('[DateDisplay] Failed to fetch font CSS:', e);
-          return;
+
+          customFontStyleEl = document.createElement('style');
+          customFontStyleEl.textContent = response.data;
+          document.head.appendChild(customFontStyleEl);
+          console.log('[DateDisplay] Custom font CSS loaded successfully');
+
+          // Parse CSS to extract font families and update settings dropdown
+          var fontFamilies = parseFontFamiliesFromCSS(response.data);
+          if (fontFamilies.length > 0 && api.settings && api.settings.updateOptions) {
+            var options = fontFamilies.map(function(family) {
+              return { label: family, value: family };
+            });
+            api.settings.updateOptions('customFontFamily', options, fontFamilies[0]);
+            console.log('[DateDisplay] Updated font family dropdown with', fontFamilies.length, 'fonts:', fontFamilies);
+          }
+        } else {
+          console.error('[DateDisplay] Failed to fetch font CSS:', response.status, response.statusText);
         }
+      } catch (e) {
+        console.error('[DateDisplay] Error fetching font CSS:', e);
       }
-
-      // For Google Fonts or when SDK isn't available, use @import
-      loadedFontUrl = url;
-
-      // Remove previous custom font style
-      if (customFontStyleEl) {
-        customFontStyleEl.remove();
-      }
-
-      customFontStyleEl = document.createElement('style');
-
-      // Check if it's a CSS URL (Google Fonts, cdnfonts, etc.) or a direct font file
-      var isCssUrl = url.includes('fonts.googleapis.com') ||
-                     url.includes('fonts.cdnfonts.com') ||
-                     url.includes('/css') ||
-                     url.endsWith('.css');
-
-      if (isCssUrl) {
-        // CSS URL - use @import
-        customFontStyleEl.textContent = '@import url("' + url + '");';
-      } else {
-        // Direct font file URL (.woff, .woff2, .ttf, .otf)
-        customFontStyleEl.textContent = '@font-face { font-family: "' + (fontFamily || 'CustomFont') + '"; src: url("' + url + '"); }';
-      }
-
-      document.head.appendChild(customFontStyleEl);
     }
 
     // Parse @font-face rules from CSS to extract font-family names
