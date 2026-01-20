@@ -194,9 +194,59 @@
     }
 
     // Load custom font from URL
-    function loadCustomFont(url, fontFamily) {
+    // Uses network.requestAccess() for domains that aren't pre-approved
+    async function loadCustomFont(url, fontFamily) {
       if (!url || loadedFontUrl === url) return;
 
+      var api = window.MyWallpaper;
+
+      // Extract domain from URL
+      var domain = null;
+      try {
+        var urlObj = new URL(url);
+        domain = urlObj.hostname;
+      } catch (e) {
+        console.error('[DateDisplay] Invalid font URL:', url);
+        return;
+      }
+
+      // For non-Google Fonts domains, request network access first
+      var isGoogleFonts = domain.includes('fonts.googleapis.com') ||
+                          domain.includes('fonts.gstatic.com');
+
+      if (!isGoogleFonts && api && api.network && api.network.requestAccess) {
+        console.log('[DateDisplay] Requesting access to:', domain);
+        var result = await api.network.requestAccess(domain, 'Charger la police personnalisée');
+        if (!result.granted) {
+          console.warn('[DateDisplay] Network access denied for:', domain);
+          return;
+        }
+        console.log('[DateDisplay] Access granted for:', domain);
+
+        // Fetch the CSS via the SDK's network proxy
+        try {
+          var response = await api.network.fetch(url);
+          if (response.ok && response.data) {
+            loadedFontUrl = url;
+
+            // Remove previous custom font style
+            if (customFontStyleEl) {
+              customFontStyleEl.remove();
+            }
+
+            customFontStyleEl = document.createElement('style');
+            customFontStyleEl.textContent = response.data;
+            document.head.appendChild(customFontStyleEl);
+            console.log('[DateDisplay] Custom font CSS loaded successfully');
+            return;
+          }
+        } catch (e) {
+          console.error('[DateDisplay] Failed to fetch font CSS:', e);
+          return;
+        }
+      }
+
+      // For Google Fonts or when SDK isn't available, use @import
       loadedFontUrl = url;
 
       // Remove previous custom font style
