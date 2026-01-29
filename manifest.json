@@ -1,6 +1,6 @@
 {
   "name": "Date Display",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "sdkVersion": "2.11.1",
   "description": "Beautiful date display widget with multi-language support and customizable fonts",
   "author": "MyWallpaper Team",
@@ -250,6 +250,17 @@
         { "label": "Left", "value": "left" },
         { "label": "Center", "value": "center" },
         { "label": "Right", "value": "right" }
+      ]
+    },
+    "textTransform": {
+      "type": "select",
+      "label": "Text Case",
+      "default": "none",
+      "options": [
+        { "label": "Normal", "value": "none" },
+        { "label": "UPPERCASE", "value": "uppercase" },
+        { "label": "lowercase", "value": "lowercase" },
+        { "label": "Capitalize", "value": "capitalize" }
       ]
     },
     "textOpacity": {

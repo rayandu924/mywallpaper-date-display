@@ -36,7 +36,7 @@
       opacity: var(--text-opacity, 1);
       letter-spacing: var(--letter-spacing, 0px);
       text-shadow: var(--text-shadow, 2px 2px 10px rgba(0,0,0,0.5));
-      text-transform: uppercase;
+      text-transform: var(--text-transform, none);
       margin-bottom: 5px;
     }
 
@@ -48,6 +48,7 @@
       opacity: var(--text-opacity, 1);
       letter-spacing: var(--letter-spacing, 0px);
       text-shadow: var(--text-shadow, 2px 2px 10px rgba(0,0,0,0.5));
+      text-transform: var(--text-transform, none);
       line-height: 1.1;
     }
 
@@ -667,10 +668,11 @@
       root.style.setProperty('--font-weight', fontWeight);
       root.style.setProperty('--font-style', fontStyle);
 
-      // Colors
+      // Colors and text styling
       root.style.setProperty('--text-color', settings.textColor || '#ffffff');
       root.style.setProperty('--text-opacity', (settings.textOpacity || 100) / 100);
       root.style.setProperty('--letter-spacing', (settings.letterSpacing || 0) + 'px');
+      root.style.setProperty('--text-transform', settings.textTransform || 'none');
 
       // Text shadow
       if (settings.enableShadow) {
