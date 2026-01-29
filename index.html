@@ -289,29 +289,30 @@
             familiesFound: loadedFontData.families.length
           });
 
-          if (loadedFontData.families.length > 0 && api.settings && api.settings.updateOptions) {
-            // Get the first extracted family (the real font name)
-            var extractedFamily = loadedFontData.families[0];
-            console.log('[DateDisplay] Extracted family from CSS:', extractedFamily);
+          if (loadedFontData.families.length > 0) {
+            // Store the extracted family globally so applyStyles can use it
+            extractedFontFamily = loadedFontData.families[0];
+            console.log('[DateDisplay] Stored extracted family:', extractedFontFamily);
 
-            // Update font family dropdown
-            var familyOptions = loadedFontData.families.map(function(family) {
-              return { label: family, value: family };
-            });
-            console.log('[DateDisplay] Calling updateOptions for customFontFamily:', familyOptions);
-            var familyResult = api.settings.updateOptions('customFontFamily', familyOptions, extractedFamily);
-            console.log('[DateDisplay] updateOptions result for customFontFamily:', familyResult);
+            // Update dropdowns if API is available
+            if (api.settings && api.settings.updateOptions) {
+              // Update font family dropdown
+              var familyOptions = loadedFontData.families.map(function(family) {
+                return { label: family, value: family };
+              });
+              console.log('[DateDisplay] Calling updateOptions for customFontFamily:', familyOptions);
+              api.settings.updateOptions('customFontFamily', familyOptions, extractedFontFamily);
 
-            // Update weight dropdown based on EXTRACTED family (not the setting value)
-            console.log('[DateDisplay] Using extracted family for weight/style:', extractedFamily);
-            updateWeightDropdown(api, extractedFamily);
+              // Update weight dropdown
+              updateWeightDropdown(api, extractedFontFamily);
 
-            // Update style dropdown based on extracted family
-            updateStyleDropdown(api, extractedFamily);
+              // Update style dropdown
+              updateStyleDropdown(api, extractedFontFamily);
+            }
 
             // IMPORTANT: Apply the font immediately with the correct family name
             var root = document.documentElement;
-            var correctFontFamily = '"' + extractedFamily + '", sans-serif';
+            var correctFontFamily = '"' + extractedFontFamily + '", sans-serif';
             console.log('[DateDisplay] Applying font-family immediately:', correctFontFamily);
             root.style.setProperty('--mw-font-family', correctFontFamily);
             document.body.style.fontFamily = correctFontFamily;
@@ -535,6 +536,9 @@
     // Current loaded font data (for dynamic dropdowns)
     var loadedFontData = null;
 
+    // The actual font family name extracted from CSS (e.g., "Anurati" not "CustomFont")
+    var extractedFontFamily = null;
+
     // Update font weight dropdown based on available weights for a font family
     function updateWeightDropdown(api, family) {
       console.log('[DateDisplay] updateWeightDropdown called for family:', family);
@@ -640,19 +644,31 @@
       var fontWeight;
       var fontStyle = 'normal';
 
-      if (settings.fontMode === 'custom' && settings.customFontFamily) {
+      if (settings.fontMode === 'custom' && settings.customFontUrl) {
+        // Load the custom font (will be skipped if already loaded)
         loadCustomFont(settings.customFontUrl, settings.customFontFamily);
-        fontFamily = '"' + settings.customFontFamily + '", sans-serif';
+
+        // Use the EXTRACTED font family (from CSS), not the setting value
+        // This is crucial because settings.customFontFamily might still be "CustomFont"
+        // while the actual font is "Anurati"
+        var actualFamily = extractedFontFamily || settings.customFontFamily || 'sans-serif';
+        fontFamily = '"' + actualFamily + '", sans-serif';
+        console.log('[DateDisplay] applyStyles using font family:', actualFamily, '(extracted:', extractedFontFamily, ', setting:', settings.customFontFamily, ')');
 
         // Use custom font weight/style if available, fallback to general settings
         fontWeight = settings.customFontWeight || settings.fontWeight || '600';
         fontStyle = settings.customFontStyle || 'normal';
 
         // Update dropdowns when family changes (for dynamic weight/style options)
-        if (loadedFontData && api) {
-          onFamilyChange(api, settings.customFontFamily);
+        if (loadedFontData && api && extractedFontFamily) {
+          onFamilyChange(api, extractedFontFamily);
         }
       } else {
+        // Reset custom font state when switching to preset
+        extractedFontFamily = null;
+        loadedFontData = null;
+        loadedFontUrl = null;
+
         var presetFont = settings.fontPreset || 'Inter';
         loadPresetFont(presetFont);
         fontFamily = '"' + presetFont + '", sans-serif';
