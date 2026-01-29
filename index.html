@@ -251,9 +251,21 @@
 
       // Fetch the CSS via the SDK's network proxy
       try {
+        console.log('[DateDisplay] Fetching URL:', url);
         var response = await api.network.fetch(url);
+        console.log('[DateDisplay] Response received:', {
+          ok: response.ok,
+          status: response.status,
+          statusText: response.statusText,
+          hasData: !!response.data,
+          dataLength: response.data ? response.data.length : 0
+        });
+
         if (response.ok && response.data) {
           loadedFontUrl = url;
+
+          // Log raw CSS content (first 500 chars)
+          console.log('[DateDisplay] CSS content preview (first 500 chars):', response.data.substring(0, 500));
 
           // Remove previous custom font style
           if (customFontStyleEl) {
@@ -263,38 +275,61 @@
           customFontStyleEl = document.createElement('style');
           customFontStyleEl.textContent = response.data;
           document.head.appendChild(customFontStyleEl);
-          console.log('[DateDisplay] Custom font CSS loaded successfully');
+          console.log('[DateDisplay] Custom font CSS injected into DOM');
 
           // Parse CSS to extract all font data and update settings dropdowns
           loadedFontData = parseFontDataFromCSS(response.data);
-          console.log('[DateDisplay] Parsed font data:', loadedFontData);
+          console.log('[DateDisplay] Parsed font data:', JSON.stringify(loadedFontData, null, 2));
+
+          // Check API availability
+          console.log('[DateDisplay] API check:', {
+            hasSettings: !!api.settings,
+            hasUpdateOptions: !!(api.settings && api.settings.updateOptions),
+            familiesFound: loadedFontData.families.length
+          });
 
           if (loadedFontData.families.length > 0 && api.settings && api.settings.updateOptions) {
             // Update font family dropdown
             var familyOptions = loadedFontData.families.map(function(family) {
               return { label: family, value: family };
             });
-            api.settings.updateOptions('customFontFamily', familyOptions, loadedFontData.families[0]);
-            console.log('[DateDisplay] Updated font family dropdown with', loadedFontData.families.length, 'fonts:', loadedFontData.families);
+            console.log('[DateDisplay] Calling updateOptions for customFontFamily:', familyOptions);
+            var familyResult = api.settings.updateOptions('customFontFamily', familyOptions, loadedFontData.families[0]);
+            console.log('[DateDisplay] updateOptions result for customFontFamily:', familyResult);
 
             // Update weight dropdown based on first family (or selected family)
             var selectedFamily = fontFamily || loadedFontData.families[0];
+            console.log('[DateDisplay] Selected family for weight/style:', selectedFamily);
             updateWeightDropdown(api, selectedFamily);
 
             // Update style dropdown based on first family (or selected family)
             updateStyleDropdown(api, selectedFamily);
+          } else {
+            console.warn('[DateDisplay] Cannot update dropdowns:', {
+              familiesFound: loadedFontData.families.length,
+              hasSettings: !!api.settings,
+              hasUpdateOptions: !!(api.settings && api.settings.updateOptions)
+            });
           }
         } else {
-          console.error('[DateDisplay] Failed to fetch font CSS:', response.status, response.statusText);
+          console.error('[DateDisplay] Failed to fetch font CSS:', {
+            ok: response.ok,
+            status: response.status,
+            statusText: response.statusText,
+            data: response.data ? response.data.substring(0, 200) : null
+          });
         }
       } catch (e) {
         console.error('[DateDisplay] Error fetching font CSS:', e);
+        console.error('[DateDisplay] Error stack:', e.stack);
       }
     }
 
     // Parse @font-face rules from CSS to extract all font properties
     // Returns: { families: [], weights: {family: [weights]}, styles: {family: [styles]}, variants: [] }
     function parseFontDataFromCSS(cssText) {
+      console.log('[DateDisplay] parseFontDataFromCSS called, CSS length:', cssText.length);
+
       var result = {
         families: [],           // Unique font family names
         weights: {},            // { "FontName": ["400", "700", ...] }
@@ -308,8 +343,25 @@
 
       // Extract all @font-face blocks
       var fontFaceBlocks = cssText.match(/@font-face\s*\{[^}]+\}/gi) || [];
+      console.log('[DateDisplay] Found @font-face blocks:', fontFaceBlocks.length);
 
-      fontFaceBlocks.forEach(function(block) {
+      // Log first block for debugging
+      if (fontFaceBlocks.length > 0) {
+        console.log('[DateDisplay] First @font-face block:', fontFaceBlocks[0]);
+      } else {
+        // Try alternative regex for multiline blocks
+        console.log('[DateDisplay] No blocks found with standard regex, trying alternative...');
+        var altBlocks = cssText.match(/@font-face\s*\{[\s\S]*?\}/gi) || [];
+        console.log('[DateDisplay] Alternative regex found:', altBlocks.length, 'blocks');
+        if (altBlocks.length > 0) {
+          fontFaceBlocks = altBlocks;
+          console.log('[DateDisplay] First alt block:', fontFaceBlocks[0]);
+        }
+      }
+
+      fontFaceBlocks.forEach(function(block, index) {
+        console.log('[DateDisplay] Parsing block', index + 1, '/', fontFaceBlocks.length);
+
         var variant = {
           family: null,
           weight: '400',      // default
@@ -320,18 +372,22 @@
 
         // Extract font-family (handle quotes, multiple quotes styles)
         var familyMatch = block.match(/font-family\s*:\s*(['"]?)([^;'"]+)\1/i);
+        console.log('[DateDisplay] Block', index + 1, '- familyMatch:', familyMatch);
         if (familyMatch) {
           variant.family = familyMatch[2].trim().replace(/^['"]|['"]$/g, '').trim();
+          console.log('[DateDisplay] Block', index + 1, '- extracted family:', variant.family);
         }
 
         // Skip generic families
         if (!variant.family ||
             ['inherit', 'initial', 'unset', 'serif', 'sans-serif', 'monospace', 'cursive', 'fantasy', 'system-ui'].includes(variant.family.toLowerCase())) {
+          console.log('[DateDisplay] Block', index + 1, '- skipping (no family or generic)');
           return;
         }
 
         // Extract font-weight (can be number or keyword)
-        var weightMatch = block.match(/font-weight\s*:\s*([^;]+)/i);
+        var weightMatch = block.match(/font-weight\s*:\s*([^;}\s]+)/i);
+        console.log('[DateDisplay] Block', index + 1, '- weightMatch:', weightMatch);
         if (weightMatch) {
           var w = weightMatch[1].trim().toLowerCase();
           // Convert keywords to numbers
@@ -347,19 +403,25 @@
             'black': '900', 'heavy': '900'
           };
           variant.weight = weightMap[w] || w;
+          console.log('[DateDisplay] Block', index + 1, '- extracted weight:', variant.weight);
         }
 
         // Extract font-style
-        var styleMatch = block.match(/font-style\s*:\s*([^;]+)/i);
+        var styleMatch = block.match(/font-style\s*:\s*([^;}\s]+)/i);
+        console.log('[DateDisplay] Block', index + 1, '- styleMatch:', styleMatch);
         if (styleMatch) {
           variant.style = styleMatch[1].trim().toLowerCase();
+          console.log('[DateDisplay] Block', index + 1, '- extracted style:', variant.style);
         }
 
         // Extract font-stretch
-        var stretchMatch = block.match(/font-stretch\s*:\s*([^;]+)/i);
+        var stretchMatch = block.match(/font-stretch\s*:\s*([^;}\s]+)/i);
         if (stretchMatch) {
           variant.stretch = stretchMatch[1].trim().toLowerCase();
+          console.log('[DateDisplay] Block', index + 1, '- extracted stretch:', variant.stretch);
         }
+
+        console.log('[DateDisplay] Block', index + 1, '- final variant:', variant);
 
         // Extract formats from src
         var srcMatch = block.match(/src\s*:\s*([^;]+)/i);
@@ -464,9 +526,19 @@
 
     // Update font weight dropdown based on available weights for a font family
     function updateWeightDropdown(api, family) {
-      if (!loadedFontData || !api.settings || !api.settings.updateOptions) return;
+      console.log('[DateDisplay] updateWeightDropdown called for family:', family);
+      console.log('[DateDisplay] loadedFontData:', loadedFontData);
+      console.log('[DateDisplay] api.settings:', api.settings);
+      console.log('[DateDisplay] api.settings.updateOptions:', api.settings ? api.settings.updateOptions : 'N/A');
+
+      if (!loadedFontData || !api.settings || !api.settings.updateOptions) {
+        console.warn('[DateDisplay] updateWeightDropdown - missing requirements');
+        return;
+      }
 
       var weights = loadedFontData.weights[family] || [];
+      console.log('[DateDisplay] Weights for', family, ':', weights);
+
       if (weights.length === 0) {
         // No weights found, keep default options
         console.log('[DateDisplay] No weights found for', family, '- keeping defaults');
@@ -485,20 +557,29 @@
                           weights.includes('500') ? '500' :
                           weights.includes('600') ? '600' : weights[0];
 
-      api.settings.updateOptions('customFontWeight', weightOptions, defaultWeight);
-      console.log('[DateDisplay] Updated weight dropdown for', family, ':', weights);
+      console.log('[DateDisplay] Calling updateOptions for customFontWeight:', weightOptions, 'default:', defaultWeight);
+      var result = api.settings.updateOptions('customFontWeight', weightOptions, defaultWeight);
+      console.log('[DateDisplay] updateOptions result for customFontWeight:', result);
     }
 
     // Update font style dropdown based on available styles for a font family
     function updateStyleDropdown(api, family) {
-      if (!loadedFontData || !api.settings || !api.settings.updateOptions) return;
+      console.log('[DateDisplay] updateStyleDropdown called for family:', family);
+
+      if (!loadedFontData || !api.settings || !api.settings.updateOptions) {
+        console.warn('[DateDisplay] updateStyleDropdown - missing requirements');
+        return;
+      }
 
       var styles = loadedFontData.styles[family] || [];
+      console.log('[DateDisplay] Styles for', family, ':', styles);
+
       if (styles.length <= 1) {
         // Only one style (or none), reset to default
         var defaultOptions = [{ label: 'Normal', value: 'normal' }];
-        api.settings.updateOptions('customFontStyle', defaultOptions, 'normal');
-        console.log('[DateDisplay] Only one style available for', family);
+        console.log('[DateDisplay] Only one style, setting default');
+        var result = api.settings.updateOptions('customFontStyle', defaultOptions, 'normal');
+        console.log('[DateDisplay] updateOptions result for customFontStyle (default):', result);
         return;
       }
 
@@ -509,8 +590,9 @@
         };
       });
 
-      api.settings.updateOptions('customFontStyle', styleOptions, 'normal');
-      console.log('[DateDisplay] Updated style dropdown for', family, ':', styles);
+      console.log('[DateDisplay] Calling updateOptions for customFontStyle:', styleOptions);
+      var result = api.settings.updateOptions('customFontStyle', styleOptions, 'normal');
+      console.log('[DateDisplay] updateOptions result for customFontStyle:', result);
     }
 
     // Update dropdowns when family selection changes
