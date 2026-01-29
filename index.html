@@ -289,21 +289,31 @@
           });
 
           if (loadedFontData.families.length > 0 && api.settings && api.settings.updateOptions) {
+            // Get the first extracted family (the real font name)
+            var extractedFamily = loadedFontData.families[0];
+            console.log('[DateDisplay] Extracted family from CSS:', extractedFamily);
+
             // Update font family dropdown
             var familyOptions = loadedFontData.families.map(function(family) {
               return { label: family, value: family };
             });
             console.log('[DateDisplay] Calling updateOptions for customFontFamily:', familyOptions);
-            var familyResult = api.settings.updateOptions('customFontFamily', familyOptions, loadedFontData.families[0]);
+            var familyResult = api.settings.updateOptions('customFontFamily', familyOptions, extractedFamily);
             console.log('[DateDisplay] updateOptions result for customFontFamily:', familyResult);
 
-            // Update weight dropdown based on first family (or selected family)
-            var selectedFamily = fontFamily || loadedFontData.families[0];
-            console.log('[DateDisplay] Selected family for weight/style:', selectedFamily);
-            updateWeightDropdown(api, selectedFamily);
+            // Update weight dropdown based on EXTRACTED family (not the setting value)
+            console.log('[DateDisplay] Using extracted family for weight/style:', extractedFamily);
+            updateWeightDropdown(api, extractedFamily);
 
-            // Update style dropdown based on first family (or selected family)
-            updateStyleDropdown(api, selectedFamily);
+            // Update style dropdown based on extracted family
+            updateStyleDropdown(api, extractedFamily);
+
+            // IMPORTANT: Apply the font immediately with the correct family name
+            var root = document.documentElement;
+            var correctFontFamily = '"' + extractedFamily + '", sans-serif';
+            console.log('[DateDisplay] Applying font-family immediately:', correctFontFamily);
+            root.style.setProperty('--mw-font-family', correctFontFamily);
+            document.body.style.fontFamily = correctFontFamily;
           } else {
             console.warn('[DateDisplay] Cannot update dropdowns:', {
               familiesFound: loadedFontData.families.length,
