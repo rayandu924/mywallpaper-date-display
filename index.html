@@ -635,7 +635,7 @@
     }
 
     // Apply CSS custom properties
-    function applyStyles(settings) {
+    async function applyStyles(settings) {
       var root = document.documentElement;
       var api = window.MyWallpaper;
 
@@ -645,8 +645,8 @@
       var fontStyle = 'normal';
 
       if (settings.fontMode === 'custom' && settings.customFontUrl) {
-        // Load the custom font (will be skipped if already loaded)
-        loadCustomFont(settings.customFontUrl, settings.customFontFamily);
+        // Load the custom font and WAIT for it (important for thumbnails)
+        await loadCustomFont(settings.customFontUrl, settings.customFontFamily);
 
         // Use the EXTRACTED font family (from CSS), not the setting value
         // This is crucial because settings.customFontFamily might still be "CustomFont"
@@ -728,9 +728,9 @@
     }
 
     // Main update function
-    function update(settings) {
+    async function update(settings) {
       currentSettings = settings || currentSettings;
-      applyStyles(currentSettings);
+      await applyStyles(currentSettings);
       updateDisplay(currentSettings);
     }
 
@@ -745,8 +745,8 @@
 
       console.log('[DateDisplay] Initializing...');
 
-      // Initial render with current config
-      update(api.config);
+      // Initial render with current config (await font loading)
+      await update(api.config);
 
       // Listen for settings changes (hot reload)
       api.onSettingsChange(function(settings, changedKeys) {
