@@ -735,7 +735,7 @@
     }
 
     // Initialize when SDK is ready
-    function init() {
+    async function init() {
       var api = window.MyWallpaper;
 
       if (!api) {
@@ -765,11 +765,34 @@
         subscribedEvents: []
       });
 
-      // Signal render complete
-      setTimeout(function() {
-        api.renderComplete();
-        console.log('[DateDisplay] Ready!');
-      }, 100);
+      // Wait for fonts to load before signaling render complete
+      // This is crucial for thumbnail generation to capture the correct font
+      try {
+        console.log('[DateDisplay] Waiting for fonts to load...');
+        await document.fonts.ready;
+        console.log('[DateDisplay] Fonts ready, loaded:', document.fonts.size, 'fonts');
+
+        // Extra wait for custom font CSS to be applied
+        if (currentSettings.fontMode === 'custom' && currentSettings.customFontUrl) {
+          // Wait a bit more for custom font to render
+          await new Promise(resolve => setTimeout(resolve, 500));
+          // Try to explicitly load the font if we know the family
+          if (extractedFontFamily) {
+            try {
+              await document.fonts.load('24px "' + extractedFontFamily + '"');
+              console.log('[DateDisplay] Custom font explicitly loaded:', extractedFontFamily);
+            } catch (e) {
+              console.warn('[DateDisplay] Could not explicitly load font:', e);
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[DateDisplay] Error waiting for fonts:', e);
+      }
+
+      // Signal render complete AFTER fonts are loaded
+      api.renderComplete();
+      console.log('[DateDisplay] Ready!');
     }
 
     // Wait for SDK
